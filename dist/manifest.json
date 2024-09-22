@@ -1,0 +1,38 @@
+{
+  "manifest_version": 3,
+  "name": "Fula Companion",
+  "version": "1.0",
+  "description": "Save images and videos to IPFS and pin them using Fula",
+  "permissions": [
+    "storage",
+    "contextMenus",
+    "clipboardWrite",
+    "tabs",
+    "activeTab"
+  ],
+  "action": {
+    "default_popup": "popup.html",
+    "default_icon": {
+      "32": "favicon-32x32.png"
+    }
+  },
+  "background": {
+    "service_worker": "bundled-background.js",
+    "type": "module"
+  },
+  "web_accessible_resources": [
+    {
+      "resources": ["helia.min.js", "helia-unixfs.min.js"],
+      "matches": ["<all_urls>"]
+    }
+  ],
+  "host_permissions": [
+    "<all_urls>"
+  ],
+  "icons": {
+    "32": "favicon-32x32.png"
+  },
+  "content_security_policy": {
+    "extension_pages": "script-src 'self' 'wasm-unsafe-eval'; object-src 'self';"
+  }
+}
