@@ -141,7 +141,46 @@ function renderPinnedItems(data) {
     const a = document.createElement('a');
     a.href = `${ipfs_gateway}/gateway/${item.pin.cid}`;
     a.textContent = item.pin.name || 'Unnamed';
-    a.target = '_blank'; // Open link in new tab
+    a.target = '_blank';
+    
+    a.addEventListener('click', async (event) => {
+      event.preventDefault();
+      try {
+        console.log('download started');
+        const response = await fetch(a.href);
+        const blob = await response.blob();
+        let fileName = item.pin.name || 'file';
+        
+        // Determine file type based on MIME type
+        const mimeType = blob.type;
+        let extension = '';
+        console.log('mimeType is : '+mimeType);
+        
+        if (mimeType.startsWith('text/')) extension = '.txt';
+        else if (mimeType === 'image/png') extension = '.png';
+        else if (mimeType === 'image/jpeg') extension = '.jpg';
+        else if (mimeType === 'image/webp') extension = '.webp';
+        else if (mimeType === 'video/mp4') extension = '.mp4';
+        
+        console.log('extension is: '+extension);
+        // Add extension if it's not already there
+        if (extension && !fileName.toLowerCase().endsWith(extension)) {
+          fileName += extension;
+        }
+        
+        const url = URL.createObjectURL(blob);
+        const downloadLink = document.createElement('a');
+        downloadLink.href = url;
+        downloadLink.download = fileName;
+        document.body.appendChild(downloadLink);
+        downloadLink.click();
+        document.body.removeChild(downloadLink);
+        URL.revokeObjectURL(url);
+      } catch (error) {
+        console.error('Download failed:', error);
+      }
+    });
+    
     li.appendChild(a);
     list.appendChild(li);
   });
