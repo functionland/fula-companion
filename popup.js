@@ -2,50 +2,6 @@ let currentPage = 1;
 const itemsPerPage = 10;
 const ipfs_gateway = 'https://ipfs.cloud.fx.land';
 
-function showPinningProgress(id, status) {
-  showElement('pinningProgress');
-  const statusList = document.getElementById('pinningStatusList');
-  const statusItem = document.createElement('li');
-  statusItem.id = `pinning-${id}`;
-  statusItem.textContent = status;
-  statusList.appendChild(statusItem);
-}
-
-function updatePinningStatus(id, status) {
-  const statusItem = document.getElementById(`pinning-${id}`);
-  if (statusItem) {
-    statusItem.textContent = status;
-  }
-}
-
-function removePinningStatus(id) {
-  setTimeout(() => {
-    const statusItem = document.getElementById(`pinning-${id}`);
-    if (statusItem) {
-      statusItem.remove();
-    }
-    if (document.getElementById('pinningStatusList').children.length === 0) {
-      hideElement('pinningProgress');
-    }
-  }, 10000);
-}
-
-// Add this to your existing chrome.runtime.onMessage listener
-chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
-  if (message.action === 'pinningStatus') {
-    if (message.status === 'started') {
-      showPinningProgress(message.id, 'Saving the file...');
-    } else if (message.status === 'uploading') {
-      updatePinningStatus(message.id, 'Uploading to Helia...');
-    } else if (message.status === 'sending') {
-      updatePinningStatus(message.id, 'Sending request to Fula...');
-    } else if (message.status === 'pinned') {
-      updatePinningStatus(message.id, 'Pinned successfully');
-      removePinningStatus(message.id);
-    }
-  }
-});
-
 document.addEventListener('DOMContentLoaded', async function() {
   try {
     console.log('Sending initHelia message to background script');
@@ -58,9 +14,10 @@ document.addEventListener('DOMContentLoaded', async function() {
     
     const { apiKey } = await chrome.storage.local.get('apiKey');
     if (apiKey) {
-      showPinnedItems(apiKey);
+      await showPinnedItems(apiKey);
+      setActiveTab('pins-tab');
     } else {
-      showSetup();
+      setActiveTab('settings-tab');
     }
   } catch (error) {
     showError('Failed to initialize Helia: ' + error.message);
@@ -69,6 +26,11 @@ document.addEventListener('DOMContentLoaded', async function() {
   document.getElementById('saveApiKey').addEventListener('click', saveApiKey);
   document.getElementById('prevPage').addEventListener('click', () => changePage(-1));
   document.getElementById('nextPage').addEventListener('click', () => changePage(1));
+
+  // Tab navigation
+  document.querySelectorAll('.tab-btn').forEach(btn => {
+    btn.addEventListener('click', () => setActiveTab(btn.id.replace('-btn', '')));
+  });
 
   // Check for ongoing uploads
   chrome.storage.local.get('pinningStatus', (data) => {
@@ -81,6 +43,13 @@ document.addEventListener('DOMContentLoaded', async function() {
   });
 });
 
+function setActiveTab(tabId) {
+  document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+  document.getElementById(tabId).classList.add('active');
+  document.getElementById(`${tabId}-btn`).classList.add('active');
+}
+
 async function saveApiKey() {
   const apiKey = document.getElementById('apiKey').value.trim();
   if (!apiKey) {
@@ -90,7 +59,8 @@ async function saveApiKey() {
 
   try {
     await chrome.storage.local.set({ apiKey });
-    showPinnedItems(apiKey);
+    await showPinnedItems(apiKey);
+    setActiveTab('pins-tab');
   } catch (error) {
     showError('Failed to save API key: ' + error.message);
   }
@@ -101,9 +71,10 @@ async function showPinnedItems(apiKey) {
   try {
     const data = await fetchPinnedItems(apiKey);
     renderPinnedItems(data);
+    updateXPCounter(data.count);
     hideLoading();
-    showElement('pinnedItems');
-    hideElement('setup');
+    document.getElementById('pins-tab').classList.remove('hidden');
+    document.getElementById('settings-tab').classList.add('hidden');
   } catch (error) {
     hideLoading();
     showError('Failed to fetch pinned items: ' + error.message);
@@ -112,7 +83,7 @@ async function showPinnedItems(apiKey) {
 
 async function fetchPinnedItems(apiKey) {
   try {
-    const response = await fetch(`https://api.cloud.fx.land/pins?limit=${itemsPerPage}&offset=${(currentPage - 1) * itemsPerPage}`, {
+    const response = await fetch(`https://api.cloud.fx.land/pins?limit=${itemsPerPage}&offset=${(currentPage - 1) * itemsPerPage}&status=pinned&sort=created,desc`, {
       headers: {
         'Authorization': `Bearer ${apiKey}`
       }
@@ -178,6 +149,7 @@ function renderPinnedItems(data) {
         URL.revokeObjectURL(url);
       } catch (error) {
         console.error('Download failed:', error);
+        showError('Failed to download file: ' + error.message);
       }
     });
     
@@ -198,32 +170,60 @@ function updatePagination(totalItems) {
 async function changePage(direction) {
   currentPage += direction;
   const { apiKey } = await chrome.storage.local.get('apiKey');
-  showPinnedItems(apiKey);
+  await showPinnedItems(apiKey);
 }
 
-function showSetup() {
-  showElement('setup');
-  hideElement('pinnedItems');
+function showPinningProgress(id, status) {
+  const statusList = document.getElementById('pinningStatusList');
+  let statusItem = document.getElementById(`pinning-${id}`);
+  if (!statusItem) {
+    statusItem = document.createElement('li');
+    statusItem.id = `pinning-${id}`;
+    statusList.appendChild(statusItem);
+  }
+  statusItem.textContent = status;
+}
+
+function updatePinningStatus(id, status) {
+  showPinningProgress(id, status);
+}
+
+function removePinningStatus(id) {
+  setTimeout(() => {
+    const statusItem = document.getElementById(`pinning-${id}`);
+    if (statusItem) {
+      statusItem.remove();
+    }
+  }, 10000);
+}
+
+function updateXPCounter(count) {
+  document.getElementById('xp-value').textContent = count;
 }
 
 function showLoading() {
-  showElement('loading');
+  document.getElementById('loading').classList.remove('hidden');
 }
 
 function hideLoading() {
-  hideElement('loading');
+  document.getElementById('loading').classList.add('hidden');
 }
 
 function showError(message) {
   const errorElement = document.getElementById('error');
-  errorElement.querySelector('#errorMessage').textContent = message;
-  showElement('error');
+  errorElement.textContent = message;
+  errorElement.classList.remove('hidden');
+  setTimeout(() => {
+    errorElement.classList.add('hidden');
+  }, 5000);
 }
 
-function showElement(id) {
-  document.getElementById(id).classList.remove('hidden');
-}
-
-function hideElement(id) {
-  document.getElementById(id).classList.add('hidden');
-}
+// Listen for messages from the background script
+chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+  if (message.action === 'pinningStatus') {
+    updatePinningStatus(message.id, `${message.status}: ${message.message}`);
+    if (message.status === 'pinned' || message.status === 'error') {
+      removePinningStatus(message.id);
+    }
+  }
+});

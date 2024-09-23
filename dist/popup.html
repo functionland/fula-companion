@@ -3,37 +3,58 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Save to Fula</title>
+  <title>Fula Companion</title>
   <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
 <body>
   <div id="app">
-    <div id="setup" class="hidden">
-      <h2>Setup</h2>
-      <p>Please go to <a href="https://cloud.fx.land" target="_blank">cloud.fx.land</a> to get an API key.</p>
-      <input type="text" id="apiKey" placeholder="Paste your API key here">
-      <button id="saveApiKey">Save</button>
-    </div>
-    <div id="pinningProgress" class="hidden">
-      <h3>Pinning Progress</h3>
-      <ul id="pinningStatusList"></ul>
-    </div>
-    <div id="pinnedItems" class="hidden">
-      <h2>Pinned Items</h2>
-      <ul id="pinnedList"></ul>
-      <div id="pagination">
-        <button id="prevPage" disabled>Previous</button>
-        <span id="pageInfo"></span>
-        <button id="nextPage">Next</button>
+    <header>
+      <h1>Fula Companion</h1>
+      <div id="xp-counter">
+        <span id="xp-value">0</span>
+        <i class="fas fa-coins"></i>
       </div>
-    </div>
-    <div id="loading" class="hidden">
-      <div class="spinner"></div>
-      <p>Loading...</p>
-    </div>
-    <div id="error" class="hidden">
-      <p id="errorMessage"></p>
-    </div>
+    </header>
+
+    <main>
+      <div id="settings-tab" class="tab-content">
+        <h2>Settings</h2>
+        <p>Please go to <a href="https://cloud.fx.land" target="_blank">cloud.fx.land</a> to get an API key.</p>
+        <input type="text" id="apiKey" placeholder="Paste your API key here">
+        <button id="saveApiKey">Save</button>
+      </div>
+
+      <div id="pins-tab" class="tab-content hidden">
+        <h2>Pinned Items</h2>
+        <ul id="pinnedList"></ul>
+        <div id="pagination">
+          <button id="prevPage" disabled>Previous</button>
+          <span id="pageInfo"></span>
+          <button id="nextPage">Next</button>
+        </div>
+      </div>
+
+      <div id="pinning-progress-tab" class="tab-content hidden">
+        <h2>Pinning Progress</h2>
+        <ul id="pinningStatusList"></ul>
+      </div>
+
+      <div id="loading" class="hidden">
+        <div class="spinner"></div>
+        <p>Loading...</p>
+      </div>
+
+      <div id="error" class="hidden">
+        <p id="errorMessage"></p>
+      </div>
+    </main>
+
+    <nav>
+      <button id="settings-tab-btn" class="tab-btn active">Settings</button>
+      <button id="pins-tab-btn" class="tab-btn">Pins</button>
+      <button id="pinning-progress-tab-btn" class="tab-btn">Progress</button>
+    </nav>
   </div>
   <script src="popup.js"></script>
 </body>
